@@ -40,6 +40,8 @@ public class Main extends JFrame {
         int trainGames = 0;
         int testGames = 0;
         String weightsFile = "qweights.txt";
+        String dqnModel = null;
+        boolean serve = false;
         int evalFunc = 0;
         int iter = 0;
         int iterGiven = 0;
@@ -64,7 +66,16 @@ public class Main extends JFrame {
                 .desc("Danh gia Pacman N van (chay an), in ti le thang").build();
         Option option_j = Option.builder("weights").argName("file").hasArg()
                 .desc("File trong so Q-learning (mac dinh qweights.txt)").build();
+        Option option_k = Option.builder("dqn").argName("model.pt").hasArg()
+                .desc("Pacman Deep Q-Network (goi dqn/policy.py bang python3)").build();
+        Option option_l = Option.builder("serve")
+                .desc("Chay an lien tuc, Pacman dieu khien qua stdin/stdout (huan luyen DQN)").build();
+        Option option_m = Option.builder("search").argName("depth").hasArg()
+                .desc("Pacman tim kiem co mo hinh: mo phong ma + gia tri Q-learning").build();
         Options options = new Options();
+        options.addOption(option_m);
+        options.addOption(option_k);
+        options.addOption(option_l);
         options.addOption(option_g);
         options.addOption(option_h);
         options.addOption(option_i);
@@ -125,6 +136,15 @@ public class Main extends JFrame {
             if (commandLine.hasOption("qlearn")) {
                 typePac = 3;
             }
+            if (commandLine.hasOption("search")) {
+                typePac = 5;
+                depth = Math.max(1, Integer.parseInt(commandLine.getOptionValue("search")));
+            }
+            if (commandLine.hasOption("dqn")) {
+                typePac = 4;
+                dqnModel = commandLine.getOptionValue("dqn");
+            }
+            serve = commandLine.hasOption("serve");
             if (commandLine.hasOption("train")) {
                 trainGames = Integer.parseInt(commandLine.getOptionValue("train"));
             }
@@ -186,8 +206,45 @@ public class Main extends JFrame {
         initState.keepGhosts(ghostAgents.size());
         System.out.println("Ghosts: " + ghostType + " x" + ghostAgents.size());
         iter = Math.max(1, iter);
+        // Môi trường cho DQN: chơi ẩn mãi mãi, Pacman điều khiển qua stdin/stdout.
+        if (serve) {
+            RemotePacmanAgent remote = new RemotePacmanAgent(0, System.in, System.out);
+            ClassicGameRules rules = new ClassicGameRules(0, true);
+            while (true) {
+                Game game = rules.newGame(initState, null, ghostAgents, remote, true);
+                game.maxMoves = 1000;
+                game.run();
+            }
+        }
+
         Agent pacman;
         switch (typePac) {
+            case 5: {
+                QLearningPacmanAgent q = new QLearningPacmanAgent(0);
+                try {
+                    q.load(weightsFile);
+                } catch (java.io.IOException e) {
+                    System.out.println("Khong doc duoc " + weightsFile
+                            + " - hay huan luyen truoc: -qlearn -train 20000");
+                    System.exit(1);
+                }
+                pacman = new ModelSearchPacmanAgent(0, depth, ghostAgents, q);
+                break;
+            }
+            case 4: {
+                String py = System.getenv().getOrDefault("PACMAN_PYTHON", "python3");
+                ProcessBuilder pb = new ProcessBuilder(py, "dqn/policy.py", dqnModel);
+                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+                try {
+                    Process proc = pb.start();
+                    pacman = new RemotePacmanAgent(0, proc.getInputStream(), proc.getOutputStream());
+                } catch (java.io.IOException e) {
+                    System.out.println("Khong chay duoc " + py + " dqn/policy.py: " + e.getMessage());
+                    System.exit(1);
+                    return;
+                }
+                break;
+            }
             case 1:
                 pacman = new PacmanAlphaBetaPrunningAgent(0, depth);
                 break;

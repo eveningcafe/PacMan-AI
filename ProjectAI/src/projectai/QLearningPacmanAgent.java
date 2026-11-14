@@ -88,6 +88,25 @@ public class QLearningPacmanAgent extends Agent {
         lastFeatures = null;
     }
 
+    /** Learned Q(s, a). Used as the search leaf value for the last move. */
+    double qValue(GameState state, int[] action) {
+        ensureDistances(state);
+        return dot(weights, features(state, action));
+    }
+
+    /** V(s) = max_a Q(s, a); 0 for a finished game. Used as a search leaf value. */
+    double value(GameState state) {
+        ensureDistances(state);
+        if (state.isWin() || state.isLose()) {
+            return 0;
+        }
+        ArrayList<int[]> actions = state.getLegalAction(index);
+        if (actions == null || actions.isEmpty()) {
+            return 0;
+        }
+        return maxQ(state, actions);
+    }
+
     private void update(double reward, double nextValue) {
         double diff = reward + gamma * nextValue - dot(weights, lastFeatures);
         for (int i = 0; i < N; i++) {

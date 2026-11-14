@@ -113,6 +113,14 @@ class Agent {
     /* Gọi một lần khi ván kết thúc (thắng, thua, hoặc hết lượt). */
     void gameOver(GameState finalState) {
     }
+
+    /*
+    * Bản sao để mô phỏng (tìm kiếm có mô hình). Tác tử không có bộ nhớ
+    * riêng theo ván thì trả lại chính nó.
+    */
+    Agent simCopy() {
+        return this;
+    }
 }
 
 class Directions {

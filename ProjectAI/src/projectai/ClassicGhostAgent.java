@@ -79,6 +79,15 @@ public class ClassicGhostAgent extends Agent {
     }
 
     @Override
+    Agent simCopy() {
+        ClassicGhostAgent c = new ClassicGhostAgent(index, personality);
+        c.lastMode = lastMode;
+        c.released = released;
+        c.lastClock = lastClock;
+        return c;
+    }
+
+    @Override
     void gameOver(GameState finalState) {
         lastMode = null;
         released = false;
