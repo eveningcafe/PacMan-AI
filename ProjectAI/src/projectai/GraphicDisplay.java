@@ -28,6 +28,15 @@ public class GraphicDisplay extends JPanel {
     private final Color dotcolor = new Color(192, 192, 0);
     private final Dimension d = new Dimension(900, 900);
     private Image ghost2, ghost1;
+    // One body color per ghost, in ghost-index order
+    // (classic mode: Chaser, Ambusher, Flanker, Shy).
+    private static final java.awt.Color[] GHOST_COLORS = {
+        new java.awt.Color(255, 40, 40),   // 1 Chaser   - red
+        new java.awt.Color(190, 90, 255),  // 2 Ambusher - purple
+        new java.awt.Color(40, 220, 90),   // 3 Flanker  - green
+        new java.awt.Color(255, 160, 40)   // 4 Shy      - orange
+    };
+    private Image[] ghostColored;
     private Timer timer;
     private Image pacman1, pacman2up, pacman2left, pacman2right, pacman2down;
     private Image pacman3up, pacman3down, pacman3left, pacman3right;
@@ -77,36 +86,72 @@ public class GraphicDisplay extends JPanel {
         }
     }
 
+    private Image loadImage(String name) {
+        java.net.URL url = getClass().getResource("/images/" + name);
+        if (url == null) {
+            System.err.println("Missing image: " + name);
+            return new ImageIcon().getImage();
+        }
+        return new ImageIcon(url).getImage();
+    }
+
+    /*
+    * Recolor the red body of the ghost sprite, keeping eyes and alpha glow.
+    */
+    private static Image tint(Image src, java.awt.Color c) {
+        int w = src.getWidth(null), h = src.getHeight(null);
+        if (w <= 0 || h <= 0) {
+            return src;
+        }
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        img.getGraphics().drawImage(src, 0, 0, null);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int argb = img.getRGB(x, y);
+                int a = argb >>> 24, r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
+                if (r > g + 60 && r > b + 60) { // reddish body pixel
+                    float k = r / 255f;
+                    int nr = (int) (c.getRed() * k), ng = (int) (c.getGreen() * k), nb = (int) (c.getBlue() * k);
+                    img.setRGB(x, y, (a << 24) | (nr << 16) | (ng << 8) | nb);
+                }
+            }
+        }
+        return img;
+    }
+
     private void loadImages() {
-        ghost1 = new ImageIcon("src\\images\\GhostScared1.png").getImage();
-        ghost2 = new ImageIcon("src\\images\\Ghost.png").getImage();
-        pacman1 = new ImageIcon("src\\images\\pacman.png").getImage();
-        pacman2up = new ImageIcon("src\\images\\up1.png").getImage();
-        pacman3up = new ImageIcon("src\\images\\up2.png").getImage();
-        pacman4up = new ImageIcon("src\\images\\up3.png").getImage();
-        pacman2down = new ImageIcon("src\\images\\down1.png").getImage();
-        pacman3down = new ImageIcon("src\\images\\down2.png").getImage();
-        pacman4down = new ImageIcon("src\\images\\down3.png").getImage();
-        pacman2left = new ImageIcon("src\\images\\left1.png").getImage();
-        pacman3left = new ImageIcon("src\\images\\left2.png").getImage();
-        pacman4left = new ImageIcon("src\\images\\left3.png").getImage();
-        pacman2right = new ImageIcon("src\\images\\right1.png").getImage();
-        pacman3right = new ImageIcon("src\\images\\right2.png").getImage();
-        pacman4right = new ImageIcon("src\\images\\right3.png").getImage();
+        ghost1 = loadImage("GhostScared1.png");
+        ghost2 = loadImage("Ghost.png");
+        ghostColored = new Image[GHOST_COLORS.length];
+        for (int i = 0; i < GHOST_COLORS.length; i++) {
+            ghostColored[i] = tint(ghost2, GHOST_COLORS[i]);
+        }
+        pacman1 = loadImage("pacman.png");
+        pacman2up = loadImage("up1.png");
+        pacman3up = loadImage("up2.png");
+        pacman4up = loadImage("up3.png");
+        pacman2down = loadImage("down1.png");
+        pacman3down = loadImage("down2.png");
+        pacman4down = loadImage("down3.png");
+        pacman2left = loadImage("left1.png");
+        pacman3left = loadImage("left2.png");
+        pacman4left = loadImage("left3.png");
+        pacman2right = loadImage("right1.png");
+        pacman3right = loadImage("right2.png");
+        pacman4right = loadImage("right3.png");
 
     }
 
     private void drawGhost(Graphics2D g2d, GameState state) {
         ArrayList<AgentState> ghosts = state.getGhostStates();
-        ghosts.forEach((ghost) -> {
-            if (ghost.scaredTimer > 0) {
-                g2d.drawImage(ghost1, (int) (ghost.configuration.position.x * blocksize),
-                        (int) (ghost.configuration.position.y * blocksize), this);
-            } else {
-                g2d.drawImage(ghost2, (int) (ghost.configuration.position.x * blocksize),
-                        (int) (ghost.configuration.position.y * blocksize), this);
-            }
-        });
+        for (int i = 0; i < ghosts.size(); i++) {
+            AgentState ghost = ghosts.get(i);
+            Image img = ghost.scaredTimer > 0 ? ghost1
+                    : ghostColored[i % ghostColored.length];
+            g2d.drawImage(img, (int) (ghost.configuration.position.x * blocksize),
+                    (int) (ghost.configuration.position.y * blocksize), this);
+        }
 
     }
 

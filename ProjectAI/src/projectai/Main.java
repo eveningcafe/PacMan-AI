@@ -35,9 +35,14 @@ public class Main extends JFrame {
     public static void main(String[] args) throws InterruptedException {
         int typePac = 0;
         int depth = 1;
-        int numGhost = 3;
+        int numGhost = -1; // default: 4 for classic ghosts, 3 for alpha-beta ghosts
+        String ghostType = "classic";
+        int trainGames = 0;
+        int testGames = 0;
+        String weightsFile = "qweights.txt";
         int evalFunc = 0;
         int iter = 0;
+        int iterGiven = 0;
         CommandLine commandLine;
         Option option_a = Option.builder("albe").argName("depth").hasArg()
                 .desc("Pacman cat tia alpha - beta").build();
@@ -49,7 +54,21 @@ public class Main extends JFrame {
                 .desc("Ham danh gia cua Ghost").build();
         Option option_e = Option.builder("numGhost").argName("number of ghost").hasArg()
                 .desc("So luong ghost").build();
+        Option option_f = Option.builder("ghost").argName("classic|ab").hasArg()
+                .desc("Kieu ma: classic (arcade target-tile AI, mac dinh) hoac ab (alpha-beta)").build();
+        Option option_g = Option.builder("qlearn")
+                .desc("Pacman approximate Q-learning (doc trong so tu -weights)").build();
+        Option option_h = Option.builder("train").argName("games").hasArg()
+                .desc("Huan luyen Q-learning N van (chay an), luu trong so").build();
+        Option option_i = Option.builder("test").argName("games").hasArg()
+                .desc("Danh gia Pacman N van (chay an), in ti le thang").build();
+        Option option_j = Option.builder("weights").argName("file").hasArg()
+                .desc("File trong so Q-learning (mac dinh qweights.txt)").build();
         Options options = new Options();
+        options.addOption(option_g);
+        options.addOption(option_h);
+        options.addOption(option_i);
+        options.addOption(option_j);
         CommandLineParser parser = new DefaultParser();
 
         options.addOption(option_a);
@@ -57,6 +76,7 @@ public class Main extends JFrame {
         options.addOption(option_c);
         options.addOption(option_d);
         options.addOption(option_e);
+        options.addOption(option_f);
 
         String header = " Lua chon ";
         String footer = " AI project: Game Pacman";
@@ -84,6 +104,7 @@ public class Main extends JFrame {
             }
 
             if (commandLine.hasOption("repeat")) {
+                iterGiven = 1;
                 if (commandLine.getOptionValue("repeat") != null) {
                     iter = Integer.parseInt(commandLine.getOptionValue("repeat"));
                 }
@@ -99,6 +120,22 @@ public class Main extends JFrame {
                 if (commandLine.getOptionValue("numGhost") != null) {
                     numGhost = Integer.parseInt(commandLine.getOptionValue("numGhost"));
                 }
+            }
+
+            if (commandLine.hasOption("qlearn")) {
+                typePac = 3;
+            }
+            if (commandLine.hasOption("train")) {
+                trainGames = Integer.parseInt(commandLine.getOptionValue("train"));
+            }
+            if (commandLine.hasOption("test")) {
+                testGames = Integer.parseInt(commandLine.getOptionValue("test"));
+            }
+            if (commandLine.hasOption("weights")) {
+                weightsFile = commandLine.getOptionValue("weights");
+            }
+            if (commandLine.hasOption("ghost") && commandLine.getOptionValue("ghost") != null) {
+                ghostType = commandLine.getOptionValue("ghost").toLowerCase();
             }
 
         } catch (ParseException exception) {
@@ -120,14 +157,24 @@ public class Main extends JFrame {
         if (evalFunc > 1 || evalFunc < 0) {
             evalFunc = 0;
         }
-        if (numGhost < 1 || numGhost > 3) {
+        if (ghostType.equals("classic")) {
+            if (numGhost < 1 || numGhost > 4) {
+                numGhost = 4;
+            }
+            for (int j = 1; j <= numGhost; j++) {
+                ghostAgents.add(new ClassicGhostAgent(j, ClassicGhostAgent.personalityFor(j)));
+            }
+        } else if (numGhost == -1) {
+            numGhost = 3; // original default for alpha-beta ghosts
+        }
+        if (!ghostType.equals("classic") && (numGhost < 1 || numGhost > 3)) {
             GhostAlphaBetaPrunningAgent ghost2 = new GhostAlphaBetaPrunningAgent(2, 1, evalFunc); // index 2, độ sâu tìm kiếm 1
             GhostAlphaBetaPrunningAgent ghost1 = new GhostAlphaBetaPrunningAgent(3, 2, evalFunc);
             RandomAgent ghost3 = new RandomAgent(3);
             ghostAgents.add(ghost1);
             ghostAgents.add(ghost2);
             ghostAgents.add(ghost3);
-        } else {
+        } else if (!ghostType.equals("classic")) {
             for (int j = 1; j < numGhost; j++) {
                 GhostAlphaBetaPrunningAgent ghostT = new GhostAlphaBetaPrunningAgent(j, j, evalFunc);
                 ghostAgents.add(ghostT);
@@ -135,62 +182,139 @@ public class Main extends JFrame {
             RandomAgent ghostR = new RandomAgent(numGhost);
             ghostAgents.add(ghostR);
         }
+        // Bản đồ có 4 vị trí 'G'; chỉ giữ số ma thực sự có tác tử điều khiển.
+        initState.keepGhosts(ghostAgents.size());
+        System.out.println("Ghosts: " + ghostType + " x" + ghostAgents.size());
         iter = Math.max(1, iter);
-        int run = 0;
+        Agent pacman;
         switch (typePac) {
-            case 1: {
-                PacmanAlphaBetaPrunningAgent pacman = new PacmanAlphaBetaPrunningAgent(0, depth);
-                m.initUI(display);
-                m.setVisible(true);
-                while (run++ < iter) {
-                    Game game = newGame.newGame(initState, display, ghostAgents,
-                            pacman, true);
-                    game.run();
-
-                    pacman.score += game.state.gameStateData.score;
-                    pacman.maxTime += game.maxTime;
-                    pacman.avgTime += (game.mTime / game.run);
+            case 1:
+                pacman = new PacmanAlphaBetaPrunningAgent(0, depth);
+                break;
+            case 2:
+                pacman = new PacmanExpectiMiniMaxAgent(0, depth);
+                break;
+            case 3: {
+                QLearningPacmanAgent q = new QLearningPacmanAgent(0);
+                if (trainGames > 0) {
+                    train(q, initState, ghostAgents, trainGames, weightsFile);
+                } else {
+                    try {
+                        q.load(weightsFile);
+                        System.out.println("Loaded weights from " + weightsFile + ":");
+                        System.out.print(q.weightsToString());
+                    } catch (java.io.IOException e) {
+                        System.out.println("Khong doc duoc " + weightsFile
+                                + " - hay huan luyen truoc: -qlearn -train 2000");
+                        System.exit(1);
+                    }
                 }
-                System.out.println("Max Time " + pacman.maxTime / (run - 1));
-                System.out.println("AVG Time " + pacman.avgTime / (run - 1));
-                System.out.println("AVG score = " + (pacman.score / (run - 1)));
-
+                q.learning = false;
+                q.epsilon = 0;
+                pacman = q;
                 break;
             }
+            default:
+                pacman = new KeyboardAgent(0);
+        }
 
-            case 2: {
-                PacmanExpectiMiniMaxAgent pacman = new PacmanExpectiMiniMaxAgent(0, depth);
-                m.initUI(display);
-                m.setVisible(true);
-                while (run++ < iter) {
-                    Game game = newGame.newGame(initState, display, ghostAgents,
-                            pacman, true);
-                    game.run();
-                    pacman.score += game.state.gameStateData.score;
-                    pacman.maxTime += game.maxTime;
-                    pacman.avgTime += (game.mTime / game.run);
-                }
-                System.out.println("Max Time " + pacman.maxTime / (run - 1));
-                System.out.println("AVG Time " + pacman.avgTime / (run - 1));
-                System.out.println("AVG score = " + (pacman.score / (run - 1)));
-
-                break;
+        // Danh gia an (khong cua so): in ti le thang, diem trung binh, thoi gian.
+        if (testGames > 0) {
+            if (pacman instanceof KeyboardAgent) {
+                System.out.println("-test can mot Pacman AI: -albe, -expect hoac -qlearn");
+                System.exit(1);
             }
-            default: {
-                KeyboardAgent pacman = new KeyboardAgent(0);
-                display.addKeyListener(pacman);
-                display.setFocusable(true);
-                m.initUI(display);
-                m.setVisible(true);
-                while (run++ < iter) {
-                    Game game = newGame.newGame(initState, display, ghostAgents,
-                            pacman, true);
-                    game.run();
-                }
-                break;
+            Stats st = playHeadless(pacman, initState, ghostAgents, testGames);
+            System.out.printf("Test %d games: win rate %.1f%%, avg score %.1f, "
+                    + "avg move time %.2f ms, max move time %d ms%n",
+                    testGames, 100.0 * st.wins / testGames, st.totalScore / testGames,
+                    (double) st.moveTimeMs / Math.max(1, st.moves), st.maxMoveMs);
+            System.exit(0);
+        }
+        // Training only (no -repeat given): stop after saving the weights.
+        if (typePac == 3 && trainGames > 0 && iterGiven == 0) {
+            System.exit(0);
+        }
+
+        if (pacman instanceof KeyboardAgent) {
+            display.addKeyListener((KeyboardAgent) pacman);
+            display.setFocusable(true);
+        }
+        m.initUI(display);
+        m.setVisible(true);
+        int run = 0;
+        long totalScore = 0, totalMoveTime = 0, totalMoves = 0, maxTime = 0;
+        while (run++ < iter) {
+            Game game = newGame.newGame(initState, display, ghostAgents, pacman, true);
+            game.run();
+            totalScore += game.state.gameStateData.score;
+            totalMoveTime += game.mTime;
+            totalMoves += game.run;
+            maxTime = Math.max(maxTime, game.maxTime);
+        }
+        if (!(pacman instanceof KeyboardAgent)) {
+            System.out.println("Max Time " + maxTime);
+            System.out.println("AVG Time " + totalMoveTime / Math.max(1, totalMoves));
+            System.out.println("AVG score = " + (totalScore / iter));
+        }
+        Thread.sleep(3000);
+        System.exit(0);
+    }
+
+    static class Stats {
+        int wins;
+        double totalScore;
+        long moves, moveTimeMs, maxMoveMs;
+    }
+
+    /* Chạy ẩn n ván (không cửa sổ, không chờ 180ms), tối đa 1000 nước mỗi ván. */
+    static Stats playHeadless(Agent pacman, GameState initState,
+            ArrayList<Agent> ghostAgents, int n) {
+        ClassicGameRules rules = new ClassicGameRules(0, true);
+        Stats st = new Stats();
+        for (int i = 0; i < n; i++) {
+            Game game = rules.newGame(initState, null, ghostAgents, pacman, true);
+            game.maxMoves = 1000;
+            game.run();
+            if (game.state.isWin()) {
+                st.wins++;
+            }
+            st.totalScore += game.state.gameStateData.score;
+            st.moves += game.run;
+            st.moveTimeMs += game.mTime;
+            st.maxMoveMs = Math.max(st.maxMoveMs, game.maxTime);
+        }
+        return st;
+    }
+
+    /* Huấn luyện Q-learning: epsilon giảm dần 0.3 -> 0.05, in tiến độ mỗi 10%. */
+    static void train(QLearningPacmanAgent q, GameState initState,
+            ArrayList<Agent> ghostAgents, int games, String weightsFile) {
+        q.learning = true;
+        int block = Math.max(1, games / 10);
+        int wins = 0;
+        double score = 0;
+        long t0 = System.currentTimeMillis();
+        for (int g = 1; g <= games; g++) {
+            q.epsilon = 0.3 - 0.25 * (g - 1) / Math.max(1, games - 1);
+            Stats st = playHeadless(q, initState, ghostAgents, 1);
+            wins += st.wins;
+            score += st.totalScore;
+            if (g % block == 0) {
+                System.out.printf("[train] games %5d-%5d  eps %.2f  win rate %5.1f%%  avg score %7.1f%n",
+                        g - block + 1, g, q.epsilon, 100.0 * wins / block, score / block);
+                wins = 0;
+                score = 0;
             }
         }
-    Thread.sleep(3000);
-    System.exit(0);
+        System.out.printf("Training done in %.1f s. Weights:%n",
+                (System.currentTimeMillis() - t0) / 1000.0);
+        System.out.print(q.weightsToString());
+        try {
+            q.save(weightsFile);
+            System.out.println("Saved to " + weightsFile);
+        } catch (java.io.IOException e) {
+            System.out.println("Khong luu duoc trong so: " + e.getMessage());
+        }
     }
 }

@@ -28,6 +28,9 @@ public class Game {
     long mTime;
     long run;
     long maxTime;
+    // Giới hạn số nước đi của Pacman (0 = không giới hạn). Dùng khi huấn luyện
+    // để tránh ván chơi lặp vô hạn.
+    long maxMoves = 0;
 
     Game(ArrayList<Agent> agents, GraphicDisplay display,
             ClassicGameRules rule, long timeout) {
@@ -76,9 +79,17 @@ public class Game {
             }
             
             this.state = this.state.generateSuccessor(agentIndex, action);
-            this.display.update(this.state);
+            if (this.display != null) { // display == null: chạy ẩn (huấn luyện)
+                this.display.update(this.state);
+            }
             this.rule.process(this.state, this);
             agentIndex = (agentIndex + 1) % numAgents;
+            if (maxMoves > 0 && this.run >= maxMoves && agentIndex == 0) {
+                gameOver = true;
+            }
+        }
+        for (Agent a : agents) {
+            a.gameOver(this.state);
         }
     }
 }
@@ -97,6 +108,10 @@ class Agent {
 
     int[] getAction(GameState state) {
         return Directions.STOP;
+    }
+
+    /* Gọi một lần khi ván kết thúc (thắng, thua, hoặc hết lượt). */
+    void gameOver(GameState finalState) {
     }
 }
 
@@ -129,6 +144,9 @@ class GameStateData {
     boolean _lose;
     Layout layout;
     ArrayList<AgentState> agentStates;
+    // Global ghost mode clock (Pacman moves while no ghost is frightened).
+    int modeClock;
+    int initialFood;
 
     public GameStateData(GameStateData prevStateData) {
         if (prevStateData != null) {
@@ -142,6 +160,8 @@ class GameStateData {
             this.score = prevStateData.score;
             this.scoreChange = 0;
             this.numGhosts = prevStateData.numGhosts;
+            this.modeClock = prevStateData.modeClock;
+            this.initialFood = prevStateData.initialFood;
             this._lose = false;
             this._win = false;
         } else {
@@ -154,6 +174,8 @@ class GameStateData {
             this.capsules = _layout.capsules;
             this.layout = _layout;
             this.numGhosts = _layout.ghostCount;
+            this.modeClock = 0;
+            this.initialFood = _layout.food.size();
             this.score = 0;
             this.scoreChange = 0;
             this._lose = false;
@@ -414,6 +436,14 @@ class GameState {
         if (agentIndex == 0) {
             // Trừ điểm của Pacman khi thực hiện hành động.
             newGameState.gameStateData.scoreChange -= 1;
+            // Scatter/chase clock pauses while any ghost is frightened.
+            boolean anyScared = false;
+            for (AgentState g : newGameState.getGhostStates()) {
+                anyScared |= g.scaredTimer > 0;
+            }
+            if (!anyScared) {
+                newGameState.gameStateData.modeClock++;
+            }
         } else {
             GhostRules.decrementTimer(newGameState, agentIndex);
         }
@@ -438,6 +468,19 @@ class GameState {
         AgentState pacmanState = this.gameStateData.agentStates.get(0)
                 .shallowClone();
         return pacmanState;
+    }
+
+    /*
+    * Chỉ giữ lại numGhosts ma đầu tiên (bản đồ có thể có nhiều vị trí 'G'
+    * hơn số ma thực sự tham gia).
+    */
+    public void keepGhosts(int numGhosts) {
+        ArrayList<AgentState> states = gameStateData.agentStates;
+        while (states.size() > numGhosts + 1) {
+            states.remove(states.size() - 1);
+        }
+        gameStateData.layout.agentPositions.removeIf(p -> p.agentIndex > numGhosts);
+        gameStateData.numGhosts = numGhosts;
     }
 
     public Position getPacmanPosition() {

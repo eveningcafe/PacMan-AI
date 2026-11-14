@@ -1,0 +1,10 @@
+# Approximate Q-learning weights
+bias 89.148234
+ghost-1-step -461.579938
+ghost-2-steps -62.317896
+eats-food 20.202967
+closest-food -303.242160
+eats-capsule 109.534367
+capsule-when-chased -14.231832
+eats-scared-ghost 116.370415
+closest-scared-ghost 175.267422
