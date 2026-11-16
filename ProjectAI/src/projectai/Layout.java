@@ -24,6 +24,9 @@ public class Layout {
     ArrayList<Position> food;
     ArrayList<Position> capsules;
     ArrayList<AgentPosition> agentPositions;
+    // Ghost house: '%' door tiles + 'G' start tiles. houseExit = tile just above the door.
+    ArrayList<Position> ghostHouse;
+    Position houseExit;
     
     public void initLayout() {
         
@@ -34,6 +37,7 @@ public class Layout {
         this.capsules = new ArrayList();
         this.walls = new ArrayList();
         this.agentPositions = new ArrayList();
+        this.ghostHouse = new ArrayList();
         this.ghostCount = 0;
         // Bản đồ tiện cho việc sửa đổi.
         char layoutText[][]
@@ -42,7 +46,7 @@ public class Layout {
                     {'w', 'C', '.', '.', '.', 'w', '.', '.', '.', '.', '.', 'w', '.', '.', '.', 'C', 'w'},
                     {'w', '.', 'w', 'w', '.', 'w', '.', 'w', 'w', 'w', '.', 'w', '.', 'w', 'w', '.', 'w'},
                     {'w', '.', 'w', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'w', '.', 'w'},
-                    {'w', '.', 'w', '.', '.', '.', 'w', '%', '%', '%', 'w', '.', '.', '.', 'w', '.', 'w'},
+                    {'w', '.', 'w', '.', '.', '.', 'w', '%', 'G', '%', 'w', '.', '.', '.', 'w', '.', 'w'},
                     {'w', '.', '.', '.', '.', '.', 'w', 'G', 'G', 'G', 'w', '.', '.', '.', '.', '.', 'w'},
                     {'w', '.', 'w', '.', '.', '.', 'w', 'w', 'w', 'w', 'w', '.', '.', '.', 'w', '.', 'w'},
                     {'w', '.', 'w', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'w', '.', 'w'},
@@ -61,6 +65,9 @@ public class Layout {
                 if (layoutText[i][j] == 'C') {
                     this.capsules.add(new Position(j, i));
                 }
+                if (layoutText[i][j] == '%' || layoutText[i][j] == 'G') {
+                    this.ghostHouse.add(new Position(j, i));
+                }
                 if (layoutText[i][j] == 'G') {
                     this.agentPositions.add(new AgentPosition(++ghostCount, j, i));
                 }
@@ -71,6 +78,24 @@ public class Layout {
         }
         // Sắp xếp vị trí của tác tử theo index tiện cho việc sử dụng.
         Collections.sort(agentPositions, new AgentPositionComparator());
+
+        // Exit tile: centered above the topmost row of the ghost house.
+        float minY = Float.MAX_VALUE, sumX = 0;
+        for (Position p : ghostHouse) {
+            minY = Math.min(minY, p.y);
+        }
+        int n = 0;
+        for (Position p : ghostHouse) {
+            if (p.y == minY) {
+                sumX += p.x;
+                n++;
+            }
+        }
+        this.houseExit = new Position(Math.round(sumX / n), minY - 1);
+    }
+
+    boolean isGhostHouse(Position pos) {
+        return ghostHouse != null && ghostHouse.contains(pos);
     }
     
     /*
@@ -109,6 +134,8 @@ public class Layout {
             newLayout.agentPositions.add(i);
         });
         newLayout.ghostCount = this.ghostCount;
+        newLayout.ghostHouse = this.ghostHouse;   // static, safe to share
+        newLayout.houseExit = this.houseExit;
         return newLayout;
     }
 

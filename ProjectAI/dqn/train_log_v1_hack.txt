@@ -1,0 +1,26 @@
+device cpu, envs 8, steps 2000000
+[dqn] steps    50,000  games    998  eps 0.91  win(last 500)   0.0%  score  -376.0    470 steps/s    1.8 min
+[dqn] steps   100,000  games   1960  eps 0.81  win(last 500)   0.0%  score  -320.3    373 steps/s    4.5 min
+[dqn] steps   150,000  games   2830  eps 0.72  win(last 500)   0.0%  score  -260.6    360 steps/s    6.9 min
+[dqn] steps   200,000  games   3628  eps 0.62  win(last 500)   0.0%  score  -138.6    358 steps/s    9.3 min
+[dqn] steps   250,000  games   4366  eps 0.53  win(last 500)   0.0%  score   -36.6    359 steps/s   11.6 min
+[dqn] steps   300,000  games   5072  eps 0.43  win(last 500)   0.0%  score   105.3    348 steps/s   14.4 min
+[dqn] steps   350,000  games   5783  eps 0.34  win(last 500)   0.0%  score   194.4    335 steps/s   17.4 min
+[dqn] steps   400,000  games   6397  eps 0.24  win(last 500)   0.0%  score   382.2    322 steps/s   20.7 min
+[dqn] steps   450,000  games   6986  eps 0.15  win(last 500)   0.4%  score   599.5    313 steps/s   24.0 min
+[dqn] steps   500,000  games   7545  eps 0.05  win(last 500)   1.4%  score   828.1    305 steps/s   27.3 min
+      saved best -> dqn/model.pt (train win 1.4%)
+[dqn] steps   550,000  games   8133  eps 0.05  win(last 500)   0.2%  score   908.8    297 steps/s   30.8 min
+[dqn] steps   600,000  games   8616  eps 0.05  win(last 500)   0.4%  score  1063.8    293 steps/s   34.1 min
+[dqn] steps   650,000  games   9169  eps 0.05  win(last 500)   0.2%  score   974.3    289 steps/s   37.5 min
+[dqn] steps   700,000  games   9711  eps 0.05  win(last 500)   0.0%  score  1062.2    293 steps/s   39.8 min
+[dqn] steps   750,000  games  10240  eps 0.05  win(last 500)   0.0%  score  1120.3    296 steps/s   42.2 min
+[dqn] steps   800,000  games  10722  eps 0.05  win(last 500)   0.0%  score  1220.3    299 steps/s   44.6 min
+[dqn] steps   850,000  games  11194  eps 0.05  win(last 500)   0.0%  score  1269.7    301 steps/s   47.1 min
+[dqn] steps   900,000  games  11683  eps 0.05  win(last 500)   0.0%  score  1314.9    303 steps/s   49.4 min
+[dqn] steps   950,000  games  12166  eps 0.05  win(last 500)   0.0%  score  1359.9    307 steps/s   51.6 min
+[dqn] steps 1,000,000  games  12648  eps 0.05  win(last 500)   0.2%  score  1353.6    310 steps/s   53.8 min
+[dqn] steps 1,050,000  games  13127  eps 0.05  win(last 500)   0.2%  score  1359.6    313 steps/s   56.0 min
+[dqn] steps 1,100,000  games  13584  eps 0.05  win(last 500)   0.0%  score  1403.8    315 steps/s   58.1 min
+[dqn] steps 1,150,000  games  14026  eps 0.05  win(last 500)   0.0%  score  1432.2    318 steps/s   60.3 min
+[dqn] steps 1,200,000  games  14517  eps 0.05  win(last 500)   0.0%  score  1326.9    320 steps/s   62.5 min

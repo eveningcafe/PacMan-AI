@@ -1,0 +1,21 @@
+[train] games     1- 2000  eps 0.28  win rate   1.9%  avg score   357.5
+[train] games  2001- 4000  eps 0.25  win rate   2.8%  avg score   399.2
+[train] games  4001- 6000  eps 0.23  win rate   4.2%  avg score   500.4
+[train] games  6001- 8000  eps 0.20  win rate   5.6%  avg score   548.5
+[train] games  8001-10000  eps 0.18  win rate   7.0%  avg score   647.7
+[train] games 10001-12000  eps 0.15  win rate   9.0%  avg score   702.4
+[train] games 12001-14000  eps 0.13  win rate  12.2%  avg score   797.2
+[train] games 14001-16000  eps 0.10  win rate  14.6%  avg score   920.7
+[train] games 16001-18000  eps 0.08  win rate  20.1%  avg score  1050.5
+[train] games 18001-20000  eps 0.05  win rate  26.5%  avg score  1214.5
+Training done in 11.9 s. Weights:
+  bias                        89.15
+  ghost-1-step              -461.58
+  ghost-2-steps              -62.32
+  eats-food                   20.20
+  closest-food              -303.24
+  eats-capsule               109.53
+  capsule-when-chased        -14.23
+  eats-scared-ghost          116.37
+  closest-scared-ghost       175.27
+Saved to qweights.txt

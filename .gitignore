@@ -1,0 +1,8 @@
+# build output (./build.sh -> out/, NetBeans/ant -> build/, dist/)
+ProjectAI/out/
+ProjectAI/build/
+ProjectAI/dist/
+__pycache__/
+# DQN checkpoints: only the released model is tracked
+*.pt
+!ProjectAI/dqn/model.pt
