@@ -17,7 +17,22 @@ N_CH = 3 + 2 * AGENT_CH + 1
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JAR = os.path.join(PROJECT, "out", "PacmanAI.jar")
-JAVA = os.environ.get("PACMAN_JAVA", os.path.expanduser("~/.jdks/openjdk-20/bin/java"))
+
+
+def _find_java():
+    """$PACMAN_JAVA, else $JAVA_HOME/bin/java, else ~/.jdks/openjdk-20, else java on PATH."""
+    if os.environ.get("PACMAN_JAVA"):
+        return os.environ["PACMAN_JAVA"]
+    cands = [os.path.expanduser("~/.jdks/openjdk-20/bin/java")]
+    if os.environ.get("JAVA_HOME"):
+        cands.insert(0, os.path.join(os.environ["JAVA_HOME"], "bin", "java"))
+    for c in cands:
+        if os.path.isfile(c):
+            return c
+    return "java"
+
+
+JAVA = _find_java()
 
 _GRID_LUT = np.zeros((256, 3), dtype=np.uint8)
 _GRID_LUT[ord("#"), 0] = 1
