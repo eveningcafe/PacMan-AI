@@ -30,8 +30,8 @@ Each Pacman plays against the 4 classic ghosts with 1 life:
 | Model-based search + Q-learning value, depth 10 | 81% | 65 |
 
 Reports:
-- `ProjectAI_MoRong.pptx`: classic ghosts and Q-learning.
-- `ProjectAI_MoRong_2.pptx`: DQN and model-based search.
+- `PacmanAI_MoRong1_MaCoDien_QLearning.pptx`: classic ghosts and Q-learning.
+- `PacmanAI_MoRong2_DQN_TimKiem.pptx`: DQN and model-based search.
 
 ### Requirements
 
