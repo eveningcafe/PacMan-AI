@@ -18,6 +18,22 @@ Classic arcade-style ghosts, plus three new Pacman AIs.
 
 They alternate between scatter and chase, leave the house one by one, and wander randomly when scared.
 
+### Watch them play
+
+Each Pacman plays one recorded game against the 4 classic ghosts, at 10 moves per second. The games were not picked: this is the first game each AI played.
+
+| Alpha-beta, depth 3 (original): lost, 540 | Expectimax, depth 2: lost, 1267 |
+|---|---|
+| ![Alpha-beta Pacman](docs/gifs/alphabeta.gif) | ![Expectimax Pacman](docs/gifs/expectimax.gif) |
+| **Q-learning: lost, 782** | **DQN: lost, 1213** |
+| ![Q-learning Pacman](docs/gifs/qlearn.gif) | ![DQN Pacman](docs/gifs/dqn.gif) |
+
+**Model-based search, depth 10: won, 3731**
+
+![Model-based search Pacman](docs/gifs/search.gif)
+
+Q-learning wins 43% of games, so losing a single game is normal for it. The DQN, on the other hand, goes for the power pellets and chases ghosts for points, the reward hacking described below.
+
 ### Results
 
 Each Pacman plays against the 4 classic ghosts with 1 life:
@@ -61,6 +77,7 @@ Run these from `ProjectAI/`:
 ./build.sh run -ghost ab              # original alpha-beta ghosts instead of classic ghosts
 ./build.sh run -numGhost 2            # fewer ghosts
 ./build.sh run -search 10 -repeat 3   # play 3 games in a row
+./record_gif.sh search.gif -search 10 # record one game as a GIF (needs ffmpeg)
 
 # Headless (no window): measure win rate over N games
 ./build.sh run -qlearn -test 1000
@@ -79,6 +96,7 @@ If `python3` is not the interpreter that has torch, set `PACMAN_PYTHON=/path/to/
 ```
 ProjectAI/
   build.sh                 build + run script (javac/jar only)
+  record_gif.sh            record one game as a GIF
   src/projectai/           game + agents (Java)
     ClassicGameRules...    game engine (from the original project)
     ClassicGhostAgent      arcade ghost AI

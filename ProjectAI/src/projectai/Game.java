@@ -31,6 +31,18 @@ public class Game {
     // Giới hạn số nước đi của Pacman (0 = không giới hạn). Dùng khi huấn luyện
     // để tránh ván chơi lặp vô hạn.
     long maxMoves = 0;
+    // -record: write one PNG per round (after the last ghost moves) into this folder.
+    String recordDir = null;
+    private int frame = 0;
+
+    private void recordFrame() {
+        try {
+            javax.imageio.ImageIO.write(display.snapshot(state), "png",
+                    new java.io.File(recordDir, String.format("frame_%05d.png", frame++)));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     Game(ArrayList<Agent> agents, GraphicDisplay display,
             ClassicGameRules rule, long timeout) {
@@ -83,6 +95,9 @@ public class Game {
                 this.display.update(this.state);
             }
             this.rule.process(this.state, this);
+            if (recordDir != null && (agentIndex == numAgents - 1 || gameOver)) {
+                recordFrame();
+            }
             agentIndex = (agentIndex + 1) % numAgents;
             if (maxMoves > 0 && this.run >= maxMoves && agentIndex == 0) {
                 gameOver = true;

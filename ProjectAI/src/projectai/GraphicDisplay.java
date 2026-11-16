@@ -281,6 +281,19 @@ public class GraphicDisplay extends JPanel {
         this.state = state;
         repaint();
     }
+
+    /* Draw one frame off screen (no window needed), used by -record. */
+    java.awt.image.BufferedImage snapshot(GameState state) {
+        this.state = state;
+        int w = scrsizeX, h = scrsizeY + 30;
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                w, h, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        setSize(w, h);
+        paintComponent(g);
+        g.dispose();
+        return img;
+    }
     
 
     private void drawMaze(Graphics2D g2d) {

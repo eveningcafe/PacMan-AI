@@ -41,6 +41,7 @@ public class Main extends JFrame {
         int testGames = 0;
         String weightsFile = "qweights.txt";
         String dqnModel = null;
+        String recordDir = null;
         boolean serve = false;
         int evalFunc = 0;
         int iter = 0;
@@ -73,6 +74,9 @@ public class Main extends JFrame {
         Option option_m = Option.builder("search").argName("depth").hasArg()
                 .desc("Pacman tim kiem co mo hinh: mo phong ma + gia tri Q-learning").build();
         Options options = new Options();
+        Option option_n = Option.builder("record").argName("dir").hasArg()
+                .desc("Choi 1 van (khong cua so), luu moi nuoc thanh PNG vao thu muc (lam GIF)").build();
+        options.addOption(option_n);
         options.addOption(option_m);
         options.addOption(option_k);
         options.addOption(option_l);
@@ -147,6 +151,9 @@ public class Main extends JFrame {
             serve = commandLine.hasOption("serve");
             if (commandLine.hasOption("train")) {
                 trainGames = Integer.parseInt(commandLine.getOptionValue("train"));
+            }
+            if (commandLine.hasOption("record")) {
+                recordDir = commandLine.getOptionValue("record");
             }
             if (commandLine.hasOption("test")) {
                 testGames = Integer.parseInt(commandLine.getOptionValue("test"));
@@ -275,6 +282,19 @@ public class Main extends JFrame {
                 pacman = new KeyboardAgent(0);
         }
 
+        // Quay 1 van ra anh PNG (khong cua so) de ghep thanh GIF/video.
+        if (recordDir != null) {
+            new java.io.File(recordDir).mkdirs();
+            ClassicGameRules rules = new ClassicGameRules(0, true);
+            Game game = rules.newGame(initState, new GraphicDisplay(initState), ghostAgents, pacman, true);
+            game.maxMoves = 1000;
+            game.recordDir = recordDir;
+            game.run();
+            System.out.printf("Recorded %d moves to %s: %s, score %d%n", game.run, recordDir,
+                    game.state.isWin() ? "win" : game.state.isLose() ? "lose" : "move limit",
+                    game.state.gameStateData.score);
+            System.exit(0);
+        }
         // Danh gia an (khong cua so): in ti le thang, diem trung binh, thoi gian.
         if (testGames > 0) {
             if (pacman instanceof KeyboardAgent) {
